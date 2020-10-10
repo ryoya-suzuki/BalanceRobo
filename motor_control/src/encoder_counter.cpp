@@ -7,17 +7,18 @@
 #define EN_B 24 //Yellow
 
 #define PULSE_NUM 11 //encoder pulse number
-
 #define REDUCTION_RATIO 90
+
+#define PROCESS_PERIOD 0.001 //[sec]
 
 const int count_turn_en = 4 * PULSE_NUM;
 const int count_turn_out = count_turn_en * REDUCTION_RATIO;
 
 int count = 0;
 
-float angle_out_pre = 0;
-float angle_out = 0;
-
+float angle_out_pre = 0.0; //[deg]
+float angle_out = 0.0; //[deg]
+float speed = 0.0; //[deg/s]
 
 
 void encoder_count_A(){
@@ -58,7 +59,13 @@ float calc_angle_output(int _count){
         return count_temp + 360.0;
 }
 
-int main(void) {
+void timer_callback(const ros::WallTimerEvent& e){
+    angle_out = calc_angle_output(count);
+    speed = (angle_out - angle_out_pre) / PROCESS_PERIOD;
+    angle_out_pre = angle_out;
+}
+
+int main(int argc,char** argv) {
     int i;
 
     if(wiringPiSetupGpio() == -1) return 1;
@@ -67,11 +74,18 @@ int main(void) {
     pinMode(EN_B, INPUT);
     wiringPiISR(EN_A, INT_EDGE_BOTH, encoder_count_A);
     wiringPiISR(EN_B, INT_EDGE_BOTH, encoder_count_B);
-    
-    while (1)
+
+    ros::init(argc, argv, "encoder");
+    ros::NodeHandle nh;
+
+    ros::WallTimer walltimer = nh.createWallTimer(ros::WallDuration(PROCESS_PERIOD), timer_callback);
+
+    ros::Rate rate(5);
+    while (ros::ok())
     {
-        printf("count %i, angle_en %f, angle_out %f \n", count, calc_angle_encoder(count), calc_angle_output(count));
-        delay(5);
+        printf("count %i, angle_out %3.1f,speed %3.1f \n", count, angle_out, speed);
+        ros::spinOnce();
+        rate.sleep();
     }
     return 0;
 }
