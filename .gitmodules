@@ -1,0 +1,6 @@
+[submodule "mpu6050_python"]
+	path = mpu6050_python
+	url = https://github.com/ryoya-suzuki/mpu6050_python.git
+[submodule "mpu6050_cpp"]
+	path = mpu6050_cpp
+	url = https://github.com/ryoya-suzuki/mpu6050_cpp.git
